@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { clusterApiUrl, Connection } from '@solana/web3.js';
-import { atom, useAtomValue, useSetAtom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
-import { createContext, ReactNode, useContext } from 'react';
-import toast from 'react-hot-toast';
+import { clusterApiUrl, Connection } from "@solana/web3.js";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { createContext, ReactNode, useContext } from "react";
+import toast from "react-hot-toast";
 
 export interface Cluster {
   name: string;
@@ -14,52 +14,46 @@ export interface Cluster {
 }
 
 export enum ClusterNetwork {
-  Mainnet = 'mainnet-beta',
-  Testnet = 'testnet',
-  Devnet = 'devnet',
-  Custom = 'custom',
+  Mainnet = "mainnet-beta",
+  Testnet = "testnet",
+  Devnet = "devnet",
+  Custom = "custom",
 }
 
-// By default, we don't configure the mainnet-beta cluster
-// The endpoint provided by clusterApiUrl('mainnet-beta') does not allow access from the browser due to CORS restrictions
-// To use the mainnet-beta cluster, provide a custom endpoint
 export const defaultClusters: Cluster[] = [
   {
-    name: 'devnet',
-    endpoint: clusterApiUrl('devnet'),
+    name: "devnet",
+    endpoint: clusterApiUrl("devnet"),
     network: ClusterNetwork.Devnet,
   },
-  { name: 'local', endpoint: 'http://localhost:8899' },
+  { name: "local", endpoint: "http://localhost:8899" },
   {
-    name: 'testnet',
-    endpoint: clusterApiUrl('testnet'),
+    name: "testnet",
+    endpoint: clusterApiUrl("testnet"),
     network: ClusterNetwork.Testnet,
   },
 ];
 
-const clusterAtom = atomWithStorage<Cluster>(
-  'solana-cluster',
-  defaultClusters[0]
+interface ClusterStore {
+  cluster: Cluster;
+  clusters: Cluster[];
+  setCluster: (cluster: Cluster) => void;
+  setClusters: (clusters: Cluster[]) => void;
+}
+
+const useClusterStore = create<ClusterStore>()(
+  persist(
+    (set) => ({
+      cluster: defaultClusters[0],
+      clusters: defaultClusters,
+      setCluster: (cluster) => set({ cluster }),
+      setClusters: (clusters) => set({ clusters }),
+    }),
+    {
+      name: "solana-cluster-storage",
+    }
+  )
 );
-const clustersAtom = atomWithStorage<Cluster[]>(
-  'solana-clusters',
-  defaultClusters
-);
-
-const activeClustersAtom = atom<Cluster[]>((get) => {
-  const clusters = get(clustersAtom);
-  const cluster = get(clusterAtom);
-  return clusters.map((item) => ({
-    ...item,
-    active: item.name === cluster.name,
-  }));
-});
-
-const activeClusterAtom = atom<Cluster>((get) => {
-  const clusters = get(activeClustersAtom);
-
-  return clusters.find((item) => item.active) || clusters[0];
-});
 
 export interface ClusterProviderContext {
   cluster: Cluster;
@@ -75,14 +69,19 @@ const Context = createContext<ClusterProviderContext>(
 );
 
 export function ClusterProvider({ children }: { children: ReactNode }) {
-  const cluster = useAtomValue(activeClusterAtom);
-  const clusters = useAtomValue(activeClustersAtom);
-  const setCluster = useSetAtom(clusterAtom);
-  const setClusters = useSetAtom(clustersAtom);
+  const { cluster, clusters, setCluster, setClusters } = useClusterStore();
+
+  const activeClusters = clusters.map((item) => ({
+    ...item,
+    active: item.name === cluster.name,
+  }));
+
+  const activeCluster =
+    activeClusters.find((item) => item.active) || activeClusters[0];
 
   const value: ClusterProviderContext = {
-    cluster,
-    clusters: clusters.sort((a, b) => (a.name > b.name ? 1 : -1)),
+    cluster: activeCluster,
+    clusters: activeClusters.sort((a, b) => (a.name > b.name ? 1 : -1)),
     addCluster: (cluster: Cluster) => {
       try {
         new Connection(cluster.endpoint);
@@ -96,7 +95,7 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
     },
     setCluster: (cluster: Cluster) => setCluster(cluster),
     getExplorerUrl: (path: string) =>
-      `https://explorer.solana.com/${path}${getClusterUrlParam(cluster)}`,
+      `https://explorer.solana.com/${path}${getClusterUrlParam(activeCluster)}`,
   };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
@@ -106,21 +105,21 @@ export function useCluster() {
 }
 
 function getClusterUrlParam(cluster: Cluster): string {
-  let suffix = '';
+  let suffix = "";
   switch (cluster.network) {
     case ClusterNetwork.Devnet:
-      suffix = 'devnet';
+      suffix = "devnet";
       break;
     case ClusterNetwork.Mainnet:
-      suffix = '';
+      suffix = "";
       break;
     case ClusterNetwork.Testnet:
-      suffix = 'testnet';
+      suffix = "testnet";
       break;
     default:
       suffix = `custom&customUrl=${encodeURIComponent(cluster.endpoint)}`;
       break;
   }
 
-  return suffix.length ? `?cluster=${suffix}` : '';
+  return suffix.length ? `?cluster=${suffix}` : "";
 }

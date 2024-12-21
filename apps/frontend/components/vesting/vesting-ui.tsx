@@ -1,69 +1,202 @@
 "use client";
 
-import { PublicKey } from "@solana/web3.js";
-import { useMemo, useState } from "react";
+import React, { useState, useMemo } from "react";
+import {
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  Keypair,
+} from "@solana/web3.js";
+import {
+  createInitializeMintInstruction,
+  MINT_SIZE,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { AnchorProvider, Program, web3, BN } from "@coral-xyz/anchor";
 import {
   useVestingProgram,
   useVestingProgramAccount,
 } from "./vesting-data-access";
-import { useWallet } from "@solana/wallet-adapter-react";
+import vestingIdl from "@token-vesting/anchor/target/idl/vesting.json";
+import { PROGRAM_ID } from "@/constants";
 
 interface VestingAccount {
   publicKey: PublicKey;
 }
 
 export function VestingCreate() {
-  const { createVestingAccount } = useVestingProgram();
-  const { publicKey } = useWallet();
-  const [company, setCompany] = useState("");
-  const [mint, setMint] = useState("");
+  const { connection } = useConnection();
+  const wallet = useWallet();
+  const [companyName, setCompanyName] = useState("");
+  const [mintAddress, setMintAddress] = useState("");
+  const [isCreatingMint, setIsCreatingMint] = useState(false);
+  const [isCreatingVesting, setIsCreatingVesting] = useState(false);
 
-  const isFormValid = company.length > 0;
+  const provider = useMemo(() => {
+    if (!wallet.publicKey) return null;
+    return new AnchorProvider(connection, wallet as any, {
+      preflightCommitment: "confirmed",
+    });
+  }, [connection, wallet]);
 
-  const handleSubmit = () => {
-    if (publicKey && isFormValid) {
-      createVestingAccount.mutateAsync({ companyName: company, mint: mint });
+  const program = useMemo(() => {
+    if (!provider) return null;
+    return new Program(vestingIdl as any, PROGRAM_ID, provider);
+  }, [provider]);
+
+  const createMintAccount = async (decimals: number) => {
+    if (!wallet.publicKey || !wallet.signTransaction) {
+      alert("Wallet not connected");
+      return;
+    }
+    try {
+      setIsCreatingMint(true);
+
+      const mintKeypair = Keypair.generate();
+      const lamports = await connection.getMinimumBalanceForRentExemption(
+        MINT_SIZE,
+        "confirmed"
+      );
+
+      const createAccIx = SystemProgram.createAccount({
+        fromPubkey: wallet.publicKey,
+        newAccountPubkey: mintKeypair.publicKey,
+        space: MINT_SIZE,
+        lamports,
+        programId: TOKEN_PROGRAM_ID,
+      });
+
+      const initIx = createInitializeMintInstruction(
+        mintKeypair.publicKey,
+        decimals,
+        wallet.publicKey,
+        wallet.publicKey
+      );
+
+      const tx = new Transaction().add(createAccIx, initIx);
+      tx.feePayer = wallet.publicKey;
+      const { blockhash } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+
+      tx.sign(mintKeypair);
+      //@ts-expect-error
+      const signedTx = await wallet.signTransaction(tx);
+      const sig = await connection.sendRawTransaction(signedTx.serialize());
+      await connection.confirmTransaction(sig, "confirmed");
+
+      setMintAddress(mintKeypair.publicKey.toBase58());
+      alert(`Mint created: ${mintKeypair.publicKey.toBase58()}`);
+    } catch (error: any) {
+      console.error(error);
+      alert("Failed to create mint: " + error.message);
+    } finally {
+      setIsCreatingMint(false);
     }
   };
 
-  if (!publicKey) {
-    return <p>Connect your wallet</p>;
-  }
+  const createVesting = async () => {
+    if (!program || !wallet.publicKey) {
+      alert("Program not ready or wallet not connected");
+      return;
+    }
+    if (!companyName || !mintAddress) {
+      alert("Enter a company name and mint address first");
+      return;
+    }
+    try {
+      setIsCreatingVesting(true);
+
+      const [vestingPda] = await PublicKey.findProgramAddress(
+        [Buffer.from(companyName)],
+        program.programId
+      );
+      const [treasuryPda] = await PublicKey.findProgramAddress(
+        [Buffer.from("vesting_treasury"), Buffer.from(companyName)],
+        program.programId
+      );
+
+      await program.methods
+        .createVestingAccount(companyName)
+        .accounts({
+          signer: wallet.publicKey,
+          vestingAccount: vestingPda,
+          mint: new PublicKey(mintAddress),
+          treasuryTokenAccount: treasuryPda,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .rpc();
+
+      alert(`Vesting account created for company: ${companyName}`);
+    } catch (err: any) {
+      console.error(err);
+      alert("Error creating vesting account: " + err.message);
+    } finally {
+      setIsCreatingVesting(false);
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <input
-        type="text"
-        placeholder="Company Name"
-        value={company}
-        onChange={(e) => setCompany(e.target.value)}
-        className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      />
-      <input
-        type="text"
-        placeholder="Token Mint Address"
-        value={mint}
-        onChange={(e) => setMint(e.target.value)}
-        className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      />
-      <button
-        className={`w-full px-4 py-2 rounded-lg font-medium transition-all ${
-          isFormValid
-            ? "bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90"
-            : "bg-slate-800 text-slate-500 cursor-not-allowed"
-        }`}
-        onClick={handleSubmit}
-        disabled={createVestingAccount.isPending || !isFormValid}
-      >
-        {createVestingAccount.isPending ? (
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-5 h-5 border-2 border-white rounded-full animate-spin border-t-transparent" />
-            <span>Creating...</span>
+    <div className="space-y-8">
+      <div className="glass-panel p-6">
+        <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+          Create New Token
+        </h2>
+        <div className="space-y-4">
+          <div>
+            <button
+              onClick={() => createMintAccount(0)}
+              disabled={isCreatingMint}
+              className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+            >
+              {isCreatingMint ? "Creating..." : "Create Mint (0 decimals)"}
+            </button>
+            <button
+              onClick={() => createMintAccount(9)}
+              disabled={isCreatingMint}
+              className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreatingMint ? "Creating..." : "Create Mint (9 decimals)"}
+            </button>
           </div>
-        ) : (
-          "Create New Vesting Account"
-        )}
-      </button>
+          {mintAddress && (
+            <div className="mt-4 p-4 bg-slate-800/30 rounded-lg">
+              <p className="text-sm text-slate-300">Mint Address:</p>
+              <p className="text-sm font-mono break-all">{mintAddress}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="glass-panel p-6">
+        <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+          Create Vesting Account
+        </h2>
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder="Company Name"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <input
+            type="text"
+            placeholder="Mint Address"
+            value={mintAddress}
+            onChange={(e) => setMintAddress(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={createVesting}
+            disabled={isCreatingVesting}
+          >
+            {isCreatingVesting ? "Creating..." : "Create Vesting Account"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 import toast from "react-hot-toast";
@@ -126,11 +127,16 @@ export function UiLayout({
       <div className="fixed top-0 left-0 right-0 z-50 border-b border-slate-800 backdrop-blur-xl bg-slate-900/75">
         <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <Link
-              href="/"
-              className="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
-            >
-              Token Vesting
+            <Link href="/" className="flex items-center space-x-2">
+              <Image src="/logo.png" alt="Logo" width={64} height={64} />
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-white">
+                  Cliff Chain
+                </span>
+                <span className="text-sm text-slate-400">
+                  The Token Vesting Dapp
+                </span>
+              </div>
             </Link>
             <div className="hidden md:flex items-center space-x-6">
               {links.map(({ label, path }) => (

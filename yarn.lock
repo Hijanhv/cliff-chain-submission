@@ -2272,7 +2272,7 @@
     "@types/prop-types" "*"
     csstype "^3.0.2"
 
-"@types/react@^19", "@types/react@^19.0.0", "@types/react@>=17.0.0":
+"@types/react@^19", "@types/react@^19.0.0", "@types/react@>=17.0.0", "@types/react@>=18.0.0":
   version "19.0.2"
   resolved "https://registry.npmjs.org/@types/react/-/react-19.0.2.tgz"
   integrity sha512-USU8ZI/xyKJwFTpjSVIrSeHBVAGagkHQKPNbxeWwql/vDmnTIBgx+TJnhFnj1NXgz8XfprU0egV2dROLGpsBEg==
@@ -4265,6 +4265,7 @@ fresh@0.5.2:
   dependencies:
     "@coral-xyz/anchor" "^0.29.0"
     "@solana/wallet-adapter-react" "^0.15.35"
+    "@solana/wallet-adapter-react-ui" "^0.9.35"
     "@solana/web3.js" "1.94.0"
     "@tabler/icons-react" "^3.26.0"
     "@tanstack/react-query" "^5.62.8"
@@ -4276,6 +4277,7 @@ fresh@0.5.2:
     react "^19.0.0"
     react-dom "^19.0.0"
     react-hot-toast "^2.4.1"
+    zustand "^5.0.2"
 
 fs-minipass@^2.0.0:
   version "2.1.0"
@@ -5142,11 +5144,6 @@ jiti@*, jiti@^1.21.6:
   version "1.21.7"
   resolved "https://registry.npmjs.org/jiti/-/jiti-1.21.7.tgz"
   integrity sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==
-
-jotai@^2.10.4:
-  version "2.10.4"
-  resolved "https://registry.npmjs.org/jotai/-/jotai-2.10.4.tgz"
-  integrity sha512-/T4ofyMSkAybEs2OvR8S4HACa+/ASUEPLz86SUjFXJqU9RdJKLvZDJrag398suvHC5CR0+Cs4P5m/gtVcryzlw==
 
 js-base64@^3.7.5:
   version "3.7.7"
@@ -6773,7 +6770,7 @@ react-refresh@^0.14.0:
   resolved "https://registry.npmjs.org/react-refresh/-/react-refresh-0.14.2.tgz"
   integrity sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==
 
-react@*, "react@^18 || ^19", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", react@^19.0.0, "react@>= 16", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", react@>=16, react@>=17.0.0:
+react@*, "react@^18 || ^19", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", react@^19.0.0, "react@>= 16", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", react@>=16, react@>=17.0.0, react@>=18.0.0:
   version "19.0.0"
   resolved "https://registry.npmjs.org/react/-/react-19.0.0.tgz"
   integrity sha512-V8AVnmPIICiWpGfm6GLzCR/W5FXLchHop40W4nXBmdlEceh16rCN8O8LNWm5bh5XUX91fh7KpA+W0TgMKmgTpQ==
@@ -8364,3 +8361,8 @@ yocto-queue@^0.1.0:
   version "0.1.0"
   resolved "https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
+
+zustand@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.npmjs.org/zustand/-/zustand-5.0.2.tgz"
+  integrity sha512-8qNdnJVJlHlrKXi50LDqqUNmUbuBjoKLrYQBnoChIbVph7vni+sY+YpvdjXG9YLd/Bxr6scMcR+rm5H3aSqPaw==
