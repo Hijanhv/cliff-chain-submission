@@ -3,19 +3,57 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary-gradient: linear-gradient(to right, #4f46e5, #7c3aed);
+  --dark-gradient: linear-gradient(to bottom, #0f172a, #1e293b);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+html,
+body {
+  height: 100%;
+  background: var(--dark-gradient);
+  color: #e2e8f0;
+}
+
+@layer base {
+  body {
+    @apply antialiased;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .glass-panel {
+    @apply bg-slate-900/60 backdrop-blur-lg border border-slate-800/50 rounded-xl;
+  }
+
+  .gradient-border {
+    @apply relative rounded-xl;
+    background: linear-gradient(to right, #4f46e5, #7c3aed);
+    padding: 1px;
+  }
+
+  .gradient-border > * {
+    @apply bg-slate-900 rounded-xl;
+  }
+}
+
+/* Custom wallet button styling */
+.wallet-adapter-button-trigger {
+  background: var(--primary-gradient) !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.wallet-adapter-button-trigger:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.wallet-adapter-dropdown-list {
+  @apply glass-panel !important;
+}
+
+.wallet-adapter-button {
+  font-family: inherit !important;
 }
