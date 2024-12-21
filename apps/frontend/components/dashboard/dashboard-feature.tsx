@@ -28,7 +28,7 @@ export default function DashboardFeature() {
   return (
     <div>
       <AppHero
-        title="Chain Cliff"
+        title="Cliff Chain"
         subtitle="Secure token vesting platform on Solana"
       />
 

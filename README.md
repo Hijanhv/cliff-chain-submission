@@ -1,4 +1,4 @@
-# Chain Cliff Submission - Token Vesting DApp
+# Cliff Chain Submission - Token Vesting DApp
 
 This project is a Solana-based token vesting application designed to manage employee token vesting schedules efficiently and transparently. Built with **Turborepo**, it features a monorepo architecture for managing the frontend, backend, and smart contract layers seamlessly.
 
@@ -6,7 +6,7 @@ This project is a Solana-based token vesting application designed to manage empl
 
 ## Overview
 
-The **Chain Cliff Submission** is a dApp that leverages Solana blockchain and **Turborepo** to streamline the token vesting process for organizations. With modular architecture, the project is scalable and easy to extend. It supports custom vesting schedules, wallet integration, and cluster management.
+The **Cliff Chain Submission** is a dApp that leverages Solana blockchain and **Turborepo** to streamline the token vesting process for organizations. With modular architecture, the project is scalable and easy to extend. It supports custom vesting schedules, wallet integration, and cluster management.
 
 ---
 
