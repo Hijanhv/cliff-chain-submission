@@ -11,7 +11,10 @@
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.1.2"
+    "next": "15.1.2",
+    "@token-vesting/anchor": "*",
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "1.94.0"
   },
   "devDependencies": {
     "typescript": "^5",

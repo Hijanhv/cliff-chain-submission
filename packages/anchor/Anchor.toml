@@ -6,10 +6,10 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-anchor = "GohJtCgJB3nYQBtWrSyxHcS2VRnAL6cs3ifJYKVob4ZK"
+vesting = "9PmU2xFuZyXijToGTikCqjH9sq5TfXg19vudZEsirM2"
 
 [programs.devnet]
-anchor = "GohJtCgJB3nYQBtWrSyxHcS2VRnAL6cs3ifJYKVob4ZK"
+vesting = "9PmU2xFuZyXijToGTikCqjH9sq5TfXg19vudZEsirM2"
 
 [registry]
 url = "https://api.apr.dev"
