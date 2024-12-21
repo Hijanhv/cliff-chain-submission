@@ -12,7 +12,7 @@ export default function VestingFeature() {
   const { programId } = useVestingProgram();
 
   return publicKey ? (
-    <div>
+    <div className="max-w-4xl mx-auto">
       <AppHero
         title="Token Vesting"
         subtitle={'Create a new account by clicking the "Create" button.'}
