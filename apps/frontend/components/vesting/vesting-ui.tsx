@@ -22,6 +22,7 @@ import vestingIdl from "@token-vesting/anchor/target/idl/vesting.json";
 import { PROGRAM_ID } from "@/constants";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { toast } from "react-hot-toast";
 
 interface VestingAccount {
   publicKey: PublicKey;
@@ -88,10 +89,10 @@ export function VestingCreate() {
       await connection.confirmTransaction(sig, "confirmed");
 
       setMintAddress(mintKeypair.publicKey.toBase58());
-      alert(`Mint created: ${mintKeypair.publicKey.toBase58()}`);
+      toast.success(`Mint created successfully!`);
     } catch (error: any) {
       console.error(error);
-      alert("Failed to create mint: " + error.message);
+      toast.error("Failed to create mint: " + error.message);
     } finally {
       setIsCreatingMint(false);
     }
@@ -99,11 +100,11 @@ export function VestingCreate() {
 
   const createVesting = async () => {
     if (!program || !wallet.publicKey) {
-      alert("Program not ready or wallet not connected");
+      toast.error("Program not ready or wallet not connected");
       return;
     }
     if (!companyName || !mintAddress) {
-      alert("Enter a company name and mint address first");
+      toast.error("Enter a company name and mint address first");
       return;
     }
     try {
@@ -130,10 +131,10 @@ export function VestingCreate() {
         })
         .rpc();
 
-      alert(`Vesting account created for company: ${companyName}`);
+      toast.success(`Vesting account created for ${companyName}`);
     } catch (err: any) {
       console.error(err);
-      alert("Error creating vesting account: " + err.message);
+      toast.error("Error creating vesting account: " + err.message);
     } finally {
       setIsCreatingVesting(false);
     }
@@ -280,7 +281,7 @@ function VestingCard({ account }: { account: PublicKey }) {
       !beneficiary ||
       !isValidBeneficiary
     ) {
-      alert("Please fill in all fields with valid values");
+      toast.error("Please fill in all fields with valid values");
       return;
     }
 
@@ -292,12 +293,12 @@ function VestingCard({ account }: { account: PublicKey }) {
       const amount = parseInt(totalAmount);
 
       if (startTime >= endTime) {
-        alert("End date must be after start date");
+        toast.error("End date must be after start date");
         return;
       }
 
       if (cliffTime < startTime || cliffTime > endTime) {
-        alert("Cliff date must be between start and end dates");
+        toast.error("Cliff date must be between start and end dates");
         return;
       }
 
@@ -309,6 +310,8 @@ function VestingCard({ account }: { account: PublicKey }) {
         beneficiary: beneficiaryPubkey,
       });
 
+      toast.success("Employee vesting schedule created successfully!");
+
       // Clear form on success
       setStartDate(null);
       setEndDate(null);
@@ -317,7 +320,7 @@ function VestingCard({ account }: { account: PublicKey }) {
       setBeneficiary("");
     } catch (err: any) {
       console.error(err);
-      alert("Error creating employee vesting: " + err.message);
+      toast.error("Error creating employee vesting: " + err.message);
     }
   };
 

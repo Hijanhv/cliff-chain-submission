@@ -18,6 +18,7 @@ import {
   useClaimTokens,
 } from "./account-data-access";
 import { BN } from "@coral-xyz/anchor";
+import { toast } from "react-hot-toast";
 
 interface EmployeeVestingAccount {
   publicKey: PublicKey;
@@ -384,8 +385,10 @@ export function AccountVesting({ address }: { address: PublicKey }) {
         beneficiary: account.account.beneficiary,
         companyName: account.vestingAccount.companyName,
       });
+      toast.success("Successfully claimed tokens!");
     } catch (error) {
       console.error("Error claiming tokens:", error);
+      toast.error("Failed to claim tokens: " + (error as Error).message);
     }
   };
 
@@ -536,7 +539,17 @@ function ModalAirdrop({
       title="Airdrop"
       submitDisabled={!amount || mutation.isPending}
       submitLabel="Request Airdrop"
-      submit={() => mutation.mutateAsync(parseFloat(amount)).then(() => hide())}
+      submit={() =>
+        mutation
+          .mutateAsync(parseFloat(amount))
+          .then(() => {
+            toast.success("Airdrop successful!");
+            hide();
+          })
+          .catch((error) => {
+            toast.error("Airdrop failed: " + error.message);
+          })
+      }
     >
       <input
         disabled={mutation.isPending}
@@ -583,7 +596,13 @@ function ModalSend({
             destination: new PublicKey(destination),
             amount: parseFloat(amount),
           })
-          .then(() => hide());
+          .then(() => {
+            toast.success("Transfer successful!");
+            hide();
+          })
+          .catch((error) => {
+            toast.error("Transfer failed: " + error.message);
+          });
       }}
     >
       <input
