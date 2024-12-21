@@ -2,7 +2,7 @@
   "name": "@token-vesting/anchor",
   "version": "0.0.1",
   "scripts": {
-    "build": "anchor build",
+    "build": "anchor build && tsc",
     "deploy": "anchor deploy",
     "test": "anchor test"
   },
@@ -15,10 +15,11 @@
     "solana-bankrun": "^0.2.0",
     "spl-token-bankrun": "0.2.5"
   },
-  "main": "./index.cjs",
+  "main": "dist/index.js",
   "module": "./index.js",
   "private": true,
   "devDependencies": {
     "@types/mocha": "^10.0.10"
-  }
+  },
+  "types": "dist/index.d.ts"
 }

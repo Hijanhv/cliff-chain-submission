@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   PublicKey,
   SystemProgram,
@@ -20,6 +20,8 @@ import {
 } from "./vesting-data-access";
 import vestingIdl from "@token-vesting/anchor/target/idl/vesting.json";
 import { PROGRAM_ID } from "@/constants";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface VestingAccount {
   publicKey: PublicKey;
@@ -244,15 +246,80 @@ function VestingCard({ account }: { account: PublicKey }) {
   const { accountQuery, createEmployeeVesting } = useVestingProgramAccount({
     account,
   });
-  const [startTime, setStartTime] = useState(0);
-  const [endTime, setEndTime] = useState(0);
-  const [cliffTime, setCliffTime] = useState(0);
-  const [totalAmount, setTotalAmount] = useState(0);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [cliffDate, setCliffDate] = useState<Date | null>(null);
+  const [totalAmount, setTotalAmount] = useState("");
+  const [beneficiary, setBeneficiary] = useState("");
+  const [isValidBeneficiary, setIsValidBeneficiary] = useState(false);
 
   const companyName = useMemo(
-    () => accountQuery.data?.companyName ?? 0,
+    () => accountQuery.data?.companyName ?? "",
     [accountQuery.data?.companyName]
   );
+
+  const validateBeneficiary = (address: string) => {
+    try {
+      new PublicKey(address);
+      setIsValidBeneficiary(true);
+    } catch {
+      setIsValidBeneficiary(false);
+    }
+  };
+
+  useEffect(() => {
+    validateBeneficiary(beneficiary);
+  }, [beneficiary]);
+
+  const handleSubmit = async () => {
+    if (
+      !startDate ||
+      !endDate ||
+      !cliffDate ||
+      !totalAmount ||
+      !beneficiary ||
+      !isValidBeneficiary
+    ) {
+      alert("Please fill in all fields with valid values");
+      return;
+    }
+
+    try {
+      const beneficiaryPubkey = new PublicKey(beneficiary);
+      const startTime = Math.floor(startDate.getTime() / 1000);
+      const endTime = Math.floor(endDate.getTime() / 1000);
+      const cliffTime = Math.floor(cliffDate.getTime() / 1000);
+      const amount = parseInt(totalAmount);
+
+      if (startTime >= endTime) {
+        alert("End date must be after start date");
+        return;
+      }
+
+      if (cliffTime < startTime || cliffTime > endTime) {
+        alert("Cliff date must be between start and end dates");
+        return;
+      }
+
+      await createEmployeeVesting.mutateAsync({
+        startTime,
+        endTime,
+        totalAmount: amount,
+        cliffTime,
+        beneficiary: beneficiaryPubkey,
+      });
+
+      // Clear form on success
+      setStartDate(null);
+      setEndDate(null);
+      setCliffDate(null);
+      setTotalAmount("");
+      setBeneficiary("");
+    } catch (err: any) {
+      console.error(err);
+      alert("Error creating employee vesting: " + err.message);
+    }
+  };
 
   return accountQuery.isLoading ? (
     <div className="w-8 h-8 border-2 border-indigo-500 rounded-full animate-spin border-t-transparent" />
@@ -261,46 +328,128 @@ function VestingCard({ account }: { account: PublicKey }) {
       <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
         {companyName}
       </h2>
-      <div className="grid gap-4">
-        <input
-          type="text"
-          placeholder="Start Time"
-          value={startTime || ""}
-          onChange={(e) => setStartTime(parseInt(e.target.value))}
-          className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <input
-          type="text"
-          placeholder="End Time"
-          value={endTime || ""}
-          onChange={(e) => setEndTime(parseInt(e.target.value))}
-          className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <input
-          type="text"
-          placeholder="Cliff Time"
-          value={cliffTime || ""}
-          onChange={(e) => setCliffTime(parseInt(e.target.value))}
-          className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <input
-          type="text"
-          placeholder="Total Allocation"
-          value={totalAmount || ""}
-          onChange={(e) => setTotalAmount(parseInt(e.target.value))}
-          className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+
+      <div className="space-y-4">
+        <div className="flex flex-col">
+          <label className="text-sm text-slate-300 mb-1">
+            Beneficiary Address
+          </label>
+          <input
+            type="text"
+            value={beneficiary}
+            onChange={(e) => setBeneficiary(e.target.value)}
+            className={`w-full px-4 py-2 bg-slate-800/50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+              beneficiary && !isValidBeneficiary
+                ? "border-red-500"
+                : "border-slate-700"
+            }`}
+            placeholder="Enter beneficiary wallet address"
+          />
+          {beneficiary && !isValidBeneficiary && (
+            <p className="mt-1 text-xs text-red-500">
+              Please enter a valid Solana address
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <label className="text-sm text-slate-300 mb-1">Start Date</label>
+            <DatePicker
+              selected={startDate}
+              onChange={(date) => setStartDate(date)}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="MMMM d, yyyy h:mm aa"
+              className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholderText="Select start date and time"
+              wrapperClassName="w-full"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm text-slate-300 mb-1">Cliff Date</label>
+            <DatePicker
+              selected={cliffDate}
+              onChange={(date) => setCliffDate(date)}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="MMMM d, yyyy h:mm aa"
+              className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholderText="Select cliff date and time"
+              minDate={startDate || undefined}
+              maxDate={endDate || undefined}
+              wrapperClassName="w-full"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm text-slate-300 mb-1">End Date</label>
+            <DatePicker
+              selected={endDate}
+              onChange={(date) => setEndDate(date)}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="MMMM d, yyyy h:mm aa"
+              className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholderText="Select end date and time"
+              minDate={startDate || undefined}
+              wrapperClassName="w-full"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col">
+          <label className="text-sm text-slate-300 mb-1">
+            Total Token Allocation
+          </label>
+          <input
+            type="number"
+            value={totalAmount}
+            onChange={(e) => setTotalAmount(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="Enter total token amount"
+            min="0"
+          />
+        </div>
+
+        {(startDate || endDate || cliffDate) && (
+          <div className="p-4 bg-slate-800/30 rounded-lg space-y-2">
+            <h3 className="text-sm font-medium text-slate-300">
+              Schedule Summary
+            </h3>
+            {startDate && (
+              <p className="text-xs text-slate-400">
+                Vesting Starts: {startDate.toLocaleString()}
+              </p>
+            )}
+            {cliffDate && (
+              <p className="text-xs text-slate-400">
+                Cliff Period Ends: {cliffDate.toLocaleString()}
+              </p>
+            )}
+            {endDate && (
+              <p className="text-xs text-slate-400">
+                Vesting Ends: {endDate.toLocaleString()}
+              </p>
+            )}
+          </div>
+        )}
+
         <button
-          className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={() =>
-            createEmployeeVesting.mutateAsync({
-              startTime,
-              endTime,
-              totalAmount,
-              cliffTime,
-            })
+          className="w-full px-4 py-3 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSubmit}
+          disabled={
+            createEmployeeVesting.isPending ||
+            !startDate ||
+            !endDate ||
+            !cliffDate ||
+            !totalAmount ||
+            !isValidBeneficiary
           }
-          disabled={createEmployeeVesting.isPending}
         >
           {createEmployeeVesting.isPending ? (
             <div className="flex items-center justify-center space-x-2">
@@ -308,7 +457,7 @@ function VestingCard({ account }: { account: PublicKey }) {
               <span>Creating...</span>
             </div>
           ) : (
-            "Create Employee Vesting Account"
+            "Create Employee Vesting Schedule"
           )}
         </button>
       </div>

@@ -16,10 +16,12 @@
     "@tabler/icons-react": "^3.26.0",
     "@tanstack/react-query": "^5.62.8",
     "@token-vesting/anchor": "*",
+    "@types/react-datepicker": "^6.2.0",
     "i": "^0.3.7",
     "next": "15.1.2",
     "npm": "^11.0.0",
     "react": "^19.0.0",
+    "react-datepicker": "^7.5.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.4.1",
     "zustand": "^5.0.2"

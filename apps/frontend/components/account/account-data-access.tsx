@@ -14,6 +14,9 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useTransactionToast } from "../ui/ui-layout";
+import { getVestingProgram } from "@/utils/vesting";
+import { useAnchorProvider } from "../solana/solana-provider";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 
 export function useGetBalance({ address }: { address: PublicKey }) {
   const { connection } = useConnection();
@@ -158,6 +161,111 @@ export function useRequestAirdrop({ address }: { address: PublicKey }) {
     },
   });
 }
+
+export function useGetEmployeeVestingAccounts({
+  address,
+}: {
+  address: PublicKey;
+}) {
+  const { connection } = useConnection();
+  const provider = useAnchorProvider();
+  const program = getVestingProgram(provider);
+
+  return useQuery({
+    queryKey: [
+      "get-employee-vesting",
+      { endpoint: connection.rpcEndpoint, address },
+    ],
+    queryFn: async () => {
+      const accounts = await program.account.employeeAccount.all([
+        {
+          memcmp: {
+            offset: 8, // After the discriminator
+            bytes: address.toBase58(),
+          },
+        },
+      ]);
+
+      // Get vesting account details for each employee account
+      const vestingDetails = await Promise.all(
+        accounts.map(async (acc) => {
+          const vestingAccount = await program.account.vestingAccount.fetch(
+            acc.account.vestingAccount
+          );
+          return {
+            ...acc,
+            vestingAccount,
+          };
+        })
+      );
+
+      return vestingDetails;
+    },
+  });
+}
+
+export function useClaimTokens() {
+  const transactionToast = useTransactionToast();
+  const provider = useAnchorProvider();
+  const program = getVestingProgram(provider);
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      employeeAccount,
+      vestingAccount,
+      beneficiary,
+      companyName,
+    }: {
+      employeeAccount: PublicKey;
+      vestingAccount: PublicKey;
+      beneficiary: PublicKey;
+      companyName: string;
+    }) => {
+      const [treasuryPda] = await PublicKey.findProgramAddress(
+        [Buffer.from("vesting_treasury"), Buffer.from(companyName)],
+        program.programId
+      );
+
+      const vestingAccountData = await program.account.vestingAccount.fetch(
+        vestingAccount
+      );
+      const mint = vestingAccountData.mint;
+
+      // Get or create associated token account for beneficiary
+      const beneficiaryAta = await getAssociatedTokenAddress(
+        mint,
+        beneficiary,
+        false,
+        TOKEN_PROGRAM_ID
+      );
+
+      const signature = await program.methods
+        .claimTokens(companyName)
+        .accounts({
+          beneficiary,
+          employeeAccount,
+          vestingAccount,
+          mint,
+          treasuryTokenAccount: treasuryPda,
+          employeeTokenAccount: beneficiaryAta,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+
+      return signature;
+    },
+    onSuccess: (signature) => {
+      transactionToast(signature);
+      return client.invalidateQueries({ queryKey: ["get-employee-vesting"] });
+    },
+    onError: (error) => {
+      console.error("Failed to claim tokens:", error);
+      toast.error(`Failed to claim tokens: ${error.message}`);
+    },
+  });
+}
+
 async function createTransaction({
   publicKey,
   destination,

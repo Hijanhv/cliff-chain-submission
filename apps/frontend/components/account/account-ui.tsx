@@ -14,7 +14,29 @@ import {
   useGetTokenAccounts,
   useRequestAirdrop,
   useTransferSol,
+  useGetEmployeeVestingAccounts,
+  useClaimTokens,
 } from "./account-data-access";
+import { BN } from "@coral-xyz/anchor";
+
+interface EmployeeVestingAccount {
+  publicKey: PublicKey;
+  account: {
+    beneficiary: PublicKey;
+    startTime: BN;
+    endTime: BN;
+    totalAmount: BN;
+    totalWithdrawn: BN;
+    cliffTime: BN;
+    vestingAccount: PublicKey;
+  };
+  vestingAccount: {
+    companyName: string;
+    mint: PublicKey;
+    owner: PublicKey;
+    treasuryTokenAccount: PublicKey;
+  };
+}
 
 export function AccountBalance({ address }: { address: PublicKey }) {
   const query = useGetBalance({ address });
@@ -307,6 +329,164 @@ export function AccountTransactions({ address }: { address: PublicKey }) {
                 )}
               </tbody>
             </table>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function AccountVesting({ address }: { address: PublicKey }) {
+  const query = useGetEmployeeVestingAccounts({ address });
+  const claimTokens = useClaimTokens();
+  const [showAll, setShowAll] = useState(false);
+
+  const items = useMemo(() => {
+    if (showAll) return query.data;
+    return query.data?.slice(0, 5);
+  }, [query.data, showAll]);
+
+  const calculateVestedAmount = (account: EmployeeVestingAccount) => {
+    const now = Math.floor(Date.now() / 1000);
+    const startTime = Math.floor(
+      new Date(account.account.startTime.toNumber() * 1000).getTime() / 1000
+    );
+    const endTime = Math.floor(
+      new Date(account.account.endTime.toNumber() * 1000).getTime() / 1000
+    );
+    const totalAmount = account.account.totalAmount.toNumber();
+    const totalWithdrawn = account.account.totalWithdrawn.toNumber();
+    const cliffTime = Math.floor(
+      new Date(account.account.cliffTime.toNumber() * 1000).getTime() / 1000
+    );
+
+    if (now < startTime || now < cliffTime) {
+      return 0;
+    }
+
+    if (now >= endTime) {
+      return totalAmount - totalWithdrawn;
+    }
+
+    const timeElapsed = now - startTime;
+    const totalDuration = endTime - startTime;
+    const vestedAmount = Math.floor(
+      (totalAmount * timeElapsed) / totalDuration
+    );
+    return Math.max(0, vestedAmount - totalWithdrawn);
+  };
+
+  const handleClaim = async (account: EmployeeVestingAccount) => {
+    try {
+      await claimTokens.mutateAsync({
+        employeeAccount: account.publicKey,
+        vestingAccount: account.account.vestingAccount,
+        beneficiary: account.account.beneficiary,
+        companyName: account.vestingAccount.companyName,
+      });
+    } catch (error) {
+      console.error("Error claiming tokens:", error);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="justify-between">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+            Vesting Schedules
+          </h2>
+          <div className="space-x-2">
+            {query.isLoading ? (
+              <div className="w-6 h-6 border-2 border-indigo-500 rounded-full animate-spin border-t-transparent" />
+            ) : (
+              <button
+                className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                onClick={() => query.refetch()}
+              >
+                <IconRefresh size={16} className="text-slate-400" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      {query.isSuccess && (
+        <div>
+          {!query.data?.length ? (
+            <div className="text-slate-400">No vesting schedules found.</div>
+          ) : (
+            <div className="glass-panel overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-800">
+                    <th className="text-left p-4 text-slate-400 font-medium">
+                      Company
+                    </th>
+                    <th className="text-right p-4 text-slate-400 font-medium">
+                      Total Amount
+                    </th>
+                    <th className="text-right p-4 text-slate-400 font-medium">
+                      Withdrawn
+                    </th>
+                    <th className="text-right p-4 text-slate-400 font-medium">
+                      Available
+                    </th>
+                    <th className="text-right p-4 text-slate-400 font-medium">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items?.map((item) => {
+                    const vestedAmount = calculateVestedAmount(item);
+                    return (
+                      <tr
+                        key={item.publicKey.toString()}
+                        className="border-b border-slate-800/50 hover:bg-slate-800/30"
+                      >
+                        <td className="p-4">
+                          {item.vestingAccount.companyName}
+                        </td>
+                        <td className="p-4 text-right font-mono">
+                          {item.account.totalAmount.toString()}
+                        </td>
+                        <td className="p-4 text-right font-mono">
+                          {item.account.totalWithdrawn.toString()}
+                        </td>
+                        <td className="p-4 text-right font-mono">
+                          {vestedAmount.toString()}
+                        </td>
+                        <td className="p-4 text-right">
+                          <button
+                            className="btn btn-xs btn-outline"
+                            onClick={() => handleClaim(item)}
+                            disabled={
+                              vestedAmount <= 0 || claimTokens.isPending
+                            }
+                          >
+                            {claimTokens.isPending ? (
+                              <div className="w-4 h-4 border-2 border-current rounded-full animate-spin border-t-transparent" />
+                            ) : (
+                              "Claim"
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {query.data.length > 5 && (
+                <div className="p-4 text-center">
+                  <button
+                    className="btn btn-xs btn-outline"
+                    onClick={() => setShowAll(!showAll)}
+                  >
+                    {showAll ? "Show Less" : "Show All"}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

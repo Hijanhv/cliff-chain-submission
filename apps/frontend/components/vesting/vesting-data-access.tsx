@@ -11,6 +11,8 @@ import { useTransactionToast } from "../ui/ui-layout";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { getVestingProgram } from "@/utils/vesting";
 import { PROGRAM_ID } from "@/constants";
+import * as web3 from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
 
 interface CreateVestingArgs {
   companyName: string;
@@ -22,6 +24,7 @@ interface CreateEmployeeArgs {
   endTime: number;
   totalAmount: number;
   cliffTime: number;
+  beneficiary: PublicKey;
 }
 
 export function useVestingProgram() {
@@ -69,6 +72,7 @@ export function useVestingProgramAccount({ account }: { account: PublicKey }) {
   const { cluster } = useCluster();
   const transactionToast = useTransactionToast();
   const { program, accounts } = useVestingProgram();
+  const provider = useAnchorProvider();
 
   const accountQuery = useQuery({
     queryKey: ["vesting", "fetch", { cluster, account }],
@@ -77,13 +81,47 @@ export function useVestingProgramAccount({ account }: { account: PublicKey }) {
 
   const createEmployeeVesting = useMutation<string, Error, CreateEmployeeArgs>({
     mutationKey: ["vesting", "close", { cluster, account }],
-    mutationFn: ({ startTime, endTime, totalAmount, cliffTime }) =>
-      program.methods
-        .createEmployeeVesting(startTime, endTime, totalAmount, cliffTime)
-        .rpc(),
+    mutationFn: async ({
+      startTime,
+      endTime,
+      totalAmount,
+      cliffTime,
+      beneficiary,
+    }) => {
+      if (!provider) throw new Error("Provider not found");
+
+      const [employeePda] = await PublicKey.findProgramAddress(
+        [
+          Buffer.from("employee_vesting"),
+          beneficiary.toBuffer(),
+          account.toBuffer(),
+        ],
+        program.programId
+      );
+
+      return program.methods
+        .createEmployeeVesting(
+          new BN(startTime),
+          new BN(endTime),
+          new BN(totalAmount),
+          new BN(cliffTime)
+        )
+        .accounts({
+          owner: provider.wallet.publicKey,
+          beneficiary: beneficiary,
+          vestingAccount: account,
+          employeeAccount: employeePda,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .rpc();
+    },
     onSuccess: (tx) => {
       transactionToast(tx);
       return accounts.refetch();
+    },
+    onError: (error) => {
+      console.error("Error creating employee vesting:", error);
+      toast.error(`Failed to create employee vesting: ${error.message}`);
     },
   });
 
