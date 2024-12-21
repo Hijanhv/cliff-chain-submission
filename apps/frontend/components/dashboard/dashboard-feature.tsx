@@ -24,30 +24,6 @@ const vestingActions = [
   },
 ];
 
-const resources = [
-  {
-    title: "Solana Resources",
-    description: "Essential Solana development tools",
-    links: [
-      { label: "Solana Explorer", href: "https://explorer.solana.com" },
-      { label: "Solana Docs", href: "https://docs.solana.com" },
-      { label: "SPL Token", href: "https://spl.solana.com/token" },
-    ],
-  },
-  {
-    title: "Developer Links",
-    description: "Community and development resources",
-    links: [
-      {
-        label: "Solana Stack Exchange",
-        href: "https://solana.stackexchange.com",
-      },
-      { label: "Solana Cookbook", href: "https://solanacookbook.com" },
-      { label: "Solana Playground", href: "https://beta.solpg.io" },
-    ],
-  },
-];
-
 export default function DashboardFeature() {
   return (
     <div>
@@ -71,34 +47,6 @@ export default function DashboardFeature() {
               </h3>
               <p className="text-slate-400 text-sm">{action.description}</p>
             </Link>
-          ))}
-        </div>
-
-        {/* Resources Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {resources.map((resource, index) => (
-            <div
-              key={index}
-              className="glass-panel p-6 rounded-xl border border-slate-700/50"
-            >
-              <h3 className="text-xl font-semibold mb-4 bg-gradient-to-br from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-                {resource.title}
-              </h3>
-              <p className="text-slate-400 mb-4">{resource.description}</p>
-              <div className="space-y-3">
-                {resource.links.map((link, linkIndex) => (
-                  <a
-                    key={linkIndex}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-slate-300 hover:text-purple-400 transition-colors"
-                  >
-                    → {link.label}
-                  </a>
-                ))}
-              </div>
-            </div>
           ))}
         </div>
       </div>
