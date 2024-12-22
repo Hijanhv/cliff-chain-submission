@@ -140,76 +140,63 @@ export function VestingCreate() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4">
-      <div className="space-y-8">
-        <div className="glass-panel p-6">
-          <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-            Create New Token
-          </h2>
-          <p className="text-sm text-slate-300 mb-4">
-            Create a new SPL token that will be used for vesting. Choose
-            between:
-            <br />• 0 decimals - Best for whole token amounts (e.g., NFT-like
-            tokens)
-            <br />• 9 decimals - Standard for fungible tokens (similar to SOL)
-          </p>
-          <div className="space-y-4">
-            <div>
-              <button
-                onClick={() => createMintAccount(0)}
-                disabled={isCreatingMint}
-                className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2"
-              >
-                {isCreatingMint ? "Creating..." : "Create Mint (0 decimals)"}
-              </button>
-              <button
-                onClick={() => createMintAccount(9)}
-                disabled={isCreatingMint}
-                className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCreatingMint ? "Creating..." : "Create Mint (9 decimals)"}
-              </button>
-            </div>
-            {mintAddress && (
-              <div className="mt-4 p-4 bg-slate-800/30 rounded-lg">
-                <p className="text-sm text-slate-300">Mint Address:</p>
-                <p className="text-sm font-mono break-all">{mintAddress}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-panel p-6">
-          <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-            Create Vesting Account
-          </h2>
-          <p className="text-sm text-slate-300 mb-4">
-            Create a vesting contract for your company. This will be the main
-            account that manages all employee vesting schedules.
-          </p>
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Company Name"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <input
-              type="text"
-              placeholder="Mint Address"
-              value={mintAddress}
-              onChange={(e) => setMintAddress(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+    <div className="space-y-8">
+      <div className="glass-panel p-6">
+        <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+          Create New Token
+        </h2>
+        <div className="space-y-4">
+          <div>
             <button
-              className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={createVesting}
-              disabled={isCreatingVesting}
+              onClick={() => createMintAccount(0)}
+              disabled={isCreatingMint}
+              className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2"
             >
-              {isCreatingVesting ? "Creating..." : "Create Vesting Account"}
+              {isCreatingMint ? "Creating..." : "Create Mint (0 decimals)"}
+            </button>
+            <button
+              onClick={() => createMintAccount(9)}
+              disabled={isCreatingMint}
+              className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreatingMint ? "Creating..." : "Create Mint (9 decimals)"}
             </button>
           </div>
+          {mintAddress && (
+            <div className="mt-4 p-4 bg-slate-800/30 rounded-lg">
+              <p className="text-sm text-slate-300">Mint Address:</p>
+              <p className="text-sm font-mono break-all">{mintAddress}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="glass-panel p-6">
+        <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+          Create Vesting Account
+        </h2>
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder="Company Name"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <input
+            type="text"
+            placeholder="Mint Address"
+            value={mintAddress}
+            onChange={(e) => setMintAddress(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={createVesting}
+            disabled={isCreatingVesting}
+          >
+            {isCreatingVesting ? "Creating..." : "Create Vesting Account"}
+          </button>
         </div>
       </div>
     </div>
@@ -218,15 +205,6 @@ export function VestingCreate() {
 
 export function VestingList() {
   const { accounts, getProgramAccount } = useVestingProgram();
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const filteredAccounts = useMemo(() => {
-    if (!accounts.data) return [];
-    return accounts.data.filter((account: VestingAccount) => {
-      const companyName = account.publicKey.toString().toLowerCase();
-      return companyName.includes(searchTerm.toLowerCase());
-    });
-  }, [accounts.data, searchTerm]);
 
   if (getProgramAccount.isLoading) {
     return <span className="loading loading-spinner loading-lg"></span>;
@@ -242,37 +220,24 @@ export function VestingList() {
     );
   }
   return (
-    <div className="container mx-auto max-w-4xl px-4">
-      <div className="space-y-6">
-        <div className="glass-panel p-4">
-          <input
-            type="text"
-            placeholder="Search company vesting accounts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+    <div className={"space-y-6"}>
+      {accounts.isLoading ? (
+        <span className="loading loading-spinner loading-lg"></span>
+      ) : accounts.data?.length ? (
+        <div className="grid md:grid-cols-2 gap-4">
+          {accounts.data?.map((account: VestingAccount) => (
+            <VestingCard
+              key={account.publicKey.toString()}
+              account={account.publicKey}
+            />
+          ))}
         </div>
-        <div className={"space-y-6"}>
-          {accounts.isLoading ? (
-            <span className="loading loading-spinner loading-lg"></span>
-          ) : filteredAccounts.length ? (
-            <div className="grid md:grid-cols-2 gap-4">
-              {filteredAccounts.map((account: VestingAccount) => (
-                <VestingCard
-                  key={account.publicKey.toString()}
-                  account={account.publicKey}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center">
-              <h2 className={"text-2xl"}>No accounts</h2>
-              No accounts found. Create one above to get started.
-            </div>
-          )}
+      ) : (
+        <div className="text-center">
+          <h2 className={"text-2xl"}>No accounts</h2>
+          No accounts found. Create one above to get started.
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -329,9 +294,6 @@ function VestingCard({ account }: { account: PublicKey }) {
         <div className="flex flex-col">
           <label className="text-sm text-slate-300 mb-1">
             Beneficiary Address
-            <span className="text-xs text-slate-400 ml-2">
-              (Employee's wallet address that will receive the tokens)
-            </span>
           </label>
           <input
             type="text"
@@ -343,12 +305,7 @@ function VestingCard({ account }: { account: PublicKey }) {
         </div>
 
         <div className="flex flex-col">
-          <label className="text-sm text-slate-300 mb-1">
-            Start Date
-            <span className="text-xs text-slate-400 ml-2">
-              (When the vesting period begins)
-            </span>
-          </label>
+          <label className="text-sm text-slate-300 mb-1">Start Date</label>
           <DatePicker
             selected={startDate}
             onChange={(date) => setStartDate(date)}
@@ -362,12 +319,7 @@ function VestingCard({ account }: { account: PublicKey }) {
         </div>
 
         <div className="flex flex-col">
-          <label className="text-sm text-slate-300 mb-1">
-            End Date
-            <span className="text-xs text-slate-400 ml-2">
-              (When 100% of tokens will be vested)
-            </span>
-          </label>
+          <label className="text-sm text-slate-300 mb-1">End Date</label>
           <DatePicker
             selected={endDate}
             onChange={(date) => setEndDate(date)}
@@ -382,12 +334,7 @@ function VestingCard({ account }: { account: PublicKey }) {
         </div>
 
         <div className="flex flex-col">
-          <label className="text-sm text-slate-300 mb-1">
-            Cliff Date
-            <span className="text-xs text-slate-400 ml-2">
-              (Date before which no tokens can be claimed)
-            </span>
-          </label>
+          <label className="text-sm text-slate-300 mb-1">Cliff Date</label>
           <DatePicker
             selected={cliffDate}
             onChange={(date) => setCliffDate(date)}
@@ -405,9 +352,6 @@ function VestingCard({ account }: { account: PublicKey }) {
         <div className="flex flex-col">
           <label className="text-sm text-slate-300 mb-1">
             Total Allocation
-            <span className="text-xs text-slate-400 ml-2">
-              (Total number of tokens to be vested)
-            </span>
           </label>
           <input
             type="number"
@@ -416,16 +360,6 @@ function VestingCard({ account }: { account: PublicKey }) {
             className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="Enter total token amount"
           />
-        </div>
-
-        <div className="text-xs text-slate-400 p-4 bg-slate-800/30 rounded-lg">
-          <h3 className="font-medium mb-2">How Vesting Works:</h3>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Tokens will vest linearly between start and end dates</li>
-            <li>No tokens can be claimed before the cliff date</li>
-            <li>After cliff, vested tokens can be claimed at any time</li>
-            <li>100% of tokens will be available at the end date</li>
-          </ul>
         </div>
 
         <button
