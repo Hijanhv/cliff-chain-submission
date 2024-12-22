@@ -111,6 +111,14 @@ export function VestingCreate() {
       return;
     }
 
+    // Add confirmation prompt
+    const isConfirmed = window.confirm(
+      `Are you sure you want to transfer ${amount} tokens to the treasury?`
+    );
+    if (!isConfirmed) {
+      return;
+    }
+
     try {
       setIsTransferringTokens(true);
 
@@ -315,6 +323,15 @@ export function VestingCreate() {
 
 export function VestingList() {
   const { accounts, getProgramAccount } = useVestingProgram();
+  const wallet = useWallet();
+
+  const filteredAccounts = useMemo(() => {
+    if (!accounts.data || !wallet.publicKey) return [];
+    return accounts.data.filter(
+      (account) =>
+        account.account.owner.toString() === wallet.publicKey?.toString()
+    );
+  }, [accounts.data, wallet.publicKey]);
 
   if (getProgramAccount.isLoading) {
     return <span className="loading loading-spinner loading-lg"></span>;
@@ -333,9 +350,9 @@ export function VestingList() {
     <div className={"space-y-6"}>
       {accounts.isLoading ? (
         <span className="loading loading-spinner loading-lg"></span>
-      ) : accounts.data?.length ? (
+      ) : filteredAccounts.length ? (
         <div className="grid md:grid-cols-2 gap-4">
-          {accounts.data?.map((account: VestingAccount) => (
+          {filteredAccounts.map((account) => (
             <VestingCard
               key={account.publicKey.toString()}
               account={account.publicKey}
