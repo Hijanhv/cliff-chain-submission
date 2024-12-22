@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   PublicKey,
   SystemProgram,
@@ -11,6 +11,12 @@ import {
   createInitializeMintInstruction,
   MINT_SIZE,
   TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddress,
+  getMint,
+  getAccount,
+  createMintToInstruction,
+  createTransferInstruction,
 } from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Program, web3, BN } from "@coral-xyz/anchor";
@@ -34,6 +40,8 @@ export function VestingCreate() {
   const [mintAddress, setMintAddress] = useState("");
   const [isCreatingMint, setIsCreatingMint] = useState(false);
   const [isCreatingVesting, setIsCreatingVesting] = useState(false);
+  const [isMintAuthority, setIsMintAuthority] = useState(false);
+  const [isTransferringTokens, setIsTransferringTokens] = useState(false);
 
   const provider = useMemo(() => {
     if (!wallet.publicKey) return null;
@@ -97,6 +105,77 @@ export function VestingCreate() {
     }
   };
 
+  const mintAndTransferToTreasury = async (amount: number) => {
+    if (!wallet.publicKey || !mintAddress || !companyName) {
+      alert("Please connect wallet and create mint first");
+      return;
+    }
+
+    try {
+      setIsTransferringTokens(true);
+
+      // Get PDAs and accounts
+      const [treasuryPda] = await PublicKey.findProgramAddress(
+        [Buffer.from("vesting_treasury"), Buffer.from(companyName)],
+        PROGRAM_ID
+      );
+
+      const walletAta = await getAssociatedTokenAddress(
+        new PublicKey(mintAddress),
+        wallet.publicKey
+      );
+
+      const tx = new Transaction();
+
+      // Check if user's wallet has a token account and create one if needed
+      try {
+        await getAccount(connection, walletAta);
+      } catch (e) {
+        tx.add(
+          createAssociatedTokenAccountInstruction(
+            wallet.publicKey,
+            walletAta,
+            wallet.publicKey,
+            new PublicKey(mintAddress)
+          )
+        );
+      }
+
+      // Mint tokens to wallet
+      tx.add(
+        createMintToInstruction(
+          new PublicKey(mintAddress),
+          walletAta,
+          wallet.publicKey,
+          amount
+        )
+      );
+
+      // Transfer to treasury
+      tx.add(
+        createTransferInstruction(
+          walletAta,
+          treasuryPda,
+          wallet.publicKey,
+          amount
+        )
+      );
+
+      //@ts-expect-error
+      const signature = await wallet.sendTransaction(tx, connection);
+      await connection.confirmTransaction(signature, "confirmed");
+
+      alert(
+        `Successfully minted and transferred ${amount} tokens to treasury!`
+      );
+    } catch (error: any) {
+      console.error("Error:", error);
+      alert(`Failed to mint and transfer: ${error.message}`);
+    } finally {
+      setIsTransferringTokens(false);
+    }
+  };
+
   const createVesting = async () => {
     if (!program || !wallet.publicKey) {
       alert("Program not ready or wallet not connected");
@@ -130,6 +209,11 @@ export function VestingCreate() {
         })
         .rpc();
 
+      // Mint and transfer initial tokens (adjust amount as needed)
+      if (isMintAuthority) {
+        await mintAndTransferToTreasury(1_000_000);
+      }
+
       alert(`Vesting account created for company: ${companyName}`);
     } catch (err: any) {
       console.error(err);
@@ -138,6 +222,21 @@ export function VestingCreate() {
       setIsCreatingVesting(false);
     }
   };
+
+  useEffect(() => {
+    const checkMintAuthority = async () => {
+      if (!wallet.publicKey || !mintAddress) return;
+      try {
+        const mintInfo = await getMint(connection, new PublicKey(mintAddress));
+        setIsMintAuthority(
+          mintInfo.mintAuthority?.equals(wallet.publicKey) ?? false
+        );
+      } catch (error) {
+        console.error("Error checking mint authority:", error);
+      }
+    };
+    checkMintAuthority();
+  }, [wallet.publicKey, mintAddress, connection]);
 
   return (
     <div className="space-y-8">
@@ -167,6 +266,17 @@ export function VestingCreate() {
               <p className="text-sm text-slate-300">Mint Address:</p>
               <p className="text-sm font-mono break-all">{mintAddress}</p>
             </div>
+          )}
+          {mintAddress && isMintAuthority && (
+            <button
+              onClick={() => mintAndTransferToTreasury(1_000_000)}
+              disabled={isTransferringTokens}
+              className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isTransferringTokens
+                ? "Transferring..."
+                : "Mint & Transfer to Treasury"}
+            </button>
           )}
         </div>
       </div>
