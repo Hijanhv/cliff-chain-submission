@@ -42,6 +42,7 @@ export function VestingCreate() {
   const [isCreatingVesting, setIsCreatingVesting] = useState(false);
   const [isMintAuthority, setIsMintAuthority] = useState(false);
   const [isTransferringTokens, setIsTransferringTokens] = useState(false);
+  const { accounts, getProgramAccount } = useVestingProgram();
 
   const provider = useMemo(() => {
     if (!wallet.publicKey) return null;
@@ -217,12 +218,14 @@ export function VestingCreate() {
         })
         .rpc();
 
-      // Mint and transfer initial tokens (adjust amount as needed)
+      // Mint and transfer initial tokens if mint authority
       if (isMintAuthority) {
         await mintAndTransferToTreasury(1_000_000);
       }
 
       alert(`Vesting account created for company: ${companyName}`);
+      // Refresh the accounts list
+      accounts.refetch();
     } catch (err: any) {
       console.error(err);
       alert("Error creating vesting account: " + err.message);
@@ -274,17 +277,6 @@ export function VestingCreate() {
               <p className="text-sm text-slate-300">Mint Address:</p>
               <p className="text-sm font-mono break-all">{mintAddress}</p>
             </div>
-          )}
-          {mintAddress && isMintAuthority && (
-            <button
-              onClick={() => mintAndTransferToTreasury(1_000_000)}
-              disabled={isTransferringTokens}
-              className="w-full px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isTransferringTokens
-                ? "Transferring..."
-                : "Mint & Transfer to Treasury"}
-            </button>
           )}
         </div>
       </div>
